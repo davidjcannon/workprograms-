@@ -64,7 +64,7 @@ set /p currentTill=<lasttill.txt
 if "%currentTill%"=="Till213" goto Loop
 if "%currentTill%"=="Till214" goto Loop
 if "%currentTill%"=="Till215" goto Loop
-find /c "Till9" lasttill.txt && ( exit )
+find /c "Till9" lasttill.txt && ( goto Warning )
 nircmd.exe clipboard set "Opening Loan (%today%)"
 
 :: Checks if a Till was found, if no till is found the program likely finished
@@ -128,3 +128,11 @@ if %count% GEQ %totalTills% exit
 ::Loops program
 goto Loop
 
+:Warning
+nircmd.exe win activate process cmd.exe
+nircmd.exe win focus process cmd.exe
+cls
+echo Script cannot run with SCO
+echo Press anything to close script...
+pause >nul
+exit

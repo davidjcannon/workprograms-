@@ -147,7 +147,7 @@ goto Loop
 nircmd.exe win activate process cmd.exe
 nircmd.exe win focus process cmd.exe
 cls
-echo Script cannot run into SCO
+echo Script cannot run with SCO
 echo Press anything to close script...
 pause >nul
 exit
