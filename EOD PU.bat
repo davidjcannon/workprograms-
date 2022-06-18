@@ -1,13 +1,19 @@
 @echo off
 title EOD PU
 color a
-set /a debug=1
+:Restart
+set /a debug=0
 set today=%DATE:~4,2%/%DATE:~7,2%/%DATE:~10,4%
+::Grabs yesterdays date
+For /F %%A In ('PowerShell -NoP "(Get-Date).AddDays(-1).ToString('MM/dd/yyyy')"'
+)Do Set "yesterday=%%A"
 mode con: cols=60 lines=15
 set /a totalTills=18
 set /a count=0
 set /a start=0
 set /a num=0
+set /a save=1
+cd data
 
 :Warning
 cls
@@ -54,8 +60,48 @@ echo Press anything to start the script...
 set /a start=1
 pause >nul
 timeout 1 /nobreak
+
+:: Hides program
 nircmd.exe win min process cmd.exe
 nircmd.exe win min process explorer.exe
+:: Maximizes chrome
+nircmd.exe win max process chrome.exe
+nircmd.exe win focus process chrome.exe
+nircmd.exe wait 10
+
+:: Checking date
+nircmd.exe setcursor 625 315
+nircmd.exe sendmouse left click
+nircmd.exe sendmouse left click
+nircmd.exe wait 10
+::Copies current date
+nircmd.exe sendkeypress ctrl+a
+nircmd.exe wait 10
+nircmd.exe sendkeypress ctrl+c
+nircmd.exe wait 10
+nircmd.exe clipboard writefile "data.txt"
+set /p setDate=<data.txt
+
+if "%yesterday%"=="%setDate%" goto Loop
+cls
+
+:: Shows CMD to ask
+nircmd.exe win activate process cmd.exe
+nircmd.exe win focus process cmd.exe
+
+if %debug%==1 echo %yesterday% %today%
+echo WARNING: The date you are altering is set to today, did you mean to set this to yesterday?
+timeout 1 /nobreak >nul
+echo Press any key to ignore and run script anyways...
+pause >nul
+
+:: Hides program
+nircmd.exe win min process cmd.exe
+nircmd.exe win min process explorer.exe
+:: Maximizes chrome
+nircmd.exe win max process chrome.exe
+nircmd.exe win focus process chrome.exe
+nircmd.exe wait 10
 
 :Loop
 :: Clicks on the till
@@ -70,19 +116,18 @@ nircmd.exe sendkeypress ctrl+a
 nircmd.exe wait 10
 nircmd.exe sendkeypress ctrl+c
 nircmd.exe wait 10
-nircmd.exe clipboard writefile "lasttill.txt"
-set /p currentTill=<lasttill.txt
-if "%currentTill%"=="Till213" goto Loop
-if "%currentTill%"=="Till214" goto Loop
-if "%currentTill%"=="Till215" goto Loop
-find /c "Till9" lasttill.txt && ( goto Warning )
+nircmd.exe clipboard writefile "data.txt"
+set /p currentTill=<data.txt
+:: Checks if current Till is banned from being touched by the program
+>nul find "%currentTill%" bannedTills.txt && goto Loop
+find /c "Till9" data.txt && ( goto Warning )
 nircmd.exe clipboard set "EOD PU (%today%)"
 
 :: Clicks on ref
 nircmd.exe setcursor 1050 440
 nircmd.exe sendmouse left click
 nircmd.exe sendmouse left click
-nircmd.exe wait 300
+nircmd.exe wait 10
 nircmd.exe sendkeypress ctrl+v
 timeout 1 /nobreak
 
@@ -94,24 +139,36 @@ nircmd.exe sendmouse left click
 :: Shows CMD to ask
 nircmd.exe win activate process cmd.exe
 nircmd.exe win focus process cmd.exe
-cls
-find /c "Till" lasttill.txt >NUL && ( echo Current till: %currentTill% ) || ( echo Till not found, retry? Type 'C' to retry )
+
 :Money
+set /p currentTill=<data.txt
+cls
+find /c "Till" data.txt >NUL && ( echo Current till: %currentTill% ) || ( echo Till not found, retry? Type 'C' to retry )
 set /a tillsLeft=%totalTills%-%count% >nul
 echo Tills left: %tillsLeft%
 echo Enter the value for the current till
 timeout 1 /nobreak >nul
 set /p num=
+:: T stands for Tills to correct the tills
 if /i "%num%"=="T" goto Start
-:: Hides CMD
+:: R stands for restart to restart the program
+if /i "%num%"=="R" goto Restart
+
+:: Hides program
 nircmd.exe win min process cmd.exe
+nircmd.exe win min process explorer.exe
+:: Maximizes chrome
+nircmd.exe win max process chrome.exe
 nircmd.exe win focus process chrome.exe
+nircmd.exe wait 10
+
 :: C stands for correct mistake, helpful for when the program is too fast
 if /i "%num%"=="C" goto Loop
+:: D stand for default amount of money, which is $300
 if /i "%num%"=="D" set /a num=300
 :: Adds entered value to clipboard
 nircmd.exe clipboard set "%num%"
-nircmd.exe wait 150
+nircmd.exe wait 10
 
 ::Clicks on money amount
 nircmd.exe setcursor 810 710
@@ -124,19 +181,22 @@ if %debug%==1 timeout 1 /nobreak
 
 ::Clicks on save button
 nircmd.exe setcursor 1770 470
+if %save%==1 (
 nircmd.exe sendmouse left click
+pause
+)
 nircmd.exe wait 500
 
 ::Confirms save
 nircmd.exe setcursor 920 620
 nircmd.exe sendmouse left click
-:: LOADING TIME
 timeout 3 /nobreak
 
 :: Don't print
 nircmd.exe setcursor 1000 620
 nircmd.exe sendmouse left click
-nircmd.exe wait 500
+timeout 1 /nobreak
+if %safety%==1 timeout 4 /nobreak
 set /a count=%count%+1
 if %count% GEQ %totalTills% exit
 
@@ -144,11 +204,13 @@ if %count% GEQ %totalTills% exit
 goto Loop
 
 :Warning
+
+:: Shows CMD to ask
 nircmd.exe win activate process cmd.exe
 nircmd.exe win focus process cmd.exe
+
 cls
 echo Script cannot run with SCO
 echo Press anything to close script...
 pause >nul
 exit
-
