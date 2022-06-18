@@ -13,11 +13,12 @@ set /a count=0
 set /a start=0
 set /a num=0
 set /a save=1
+set /a safety=0
 cd data
 
 :Warning
 cls
-echo Opening Loan V 1.1
+echo Opening Loan V 1.1.1
 echo Made by David Cannon
 echo Press enter to continue...
 set /p input=
@@ -177,7 +178,7 @@ nircmd.exe sendmouse left click
 timeout 0 /nobreak
 nircmd.exe sendkeypress ctrl+v
 timeout 0 /nobreak
-if %debug%==1 timeout 1 /nobreak
+if %safety%==1 timeout 1 /nobreak
 
 ::Clicks on save button
 nircmd.exe setcursor 1770 470
