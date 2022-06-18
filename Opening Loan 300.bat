@@ -17,7 +17,7 @@ cd data
 
 :Warning
 cls
-echo Opening Loan 300 V 1.0
+echo Opening Loan 300 V 1.1
 echo Made by David Cannon
 pause
 color c
@@ -159,10 +159,8 @@ nircmd.exe wait 10
 
 ::Clicks on save button
 nircmd.exe setcursor 1770 470
-if %save%==1 (
-nircmd.exe sendmouse left click
-pause
-)
+if %save%==1 nircmd.exe sendmouse left click
+if %save%==0 pause
 timeout 1 /nobreak
 
 ::Confirms save

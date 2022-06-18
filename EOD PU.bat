@@ -17,7 +17,7 @@ cd data
 
 :Warning
 cls
-echo EOD PU V 1.0
+echo EOD PU V 1.1
 echo Made by David Cannon
 echo Press enter to continue...
 set /p input=
@@ -181,10 +181,8 @@ if %debug%==1 timeout 1 /nobreak
 
 ::Clicks on save button
 nircmd.exe setcursor 1770 470
-if %save%==1 (
-nircmd.exe sendmouse left click
-pause
-)
+if %save%==1 nircmd.exe sendmouse left click
+if %save%==0 pause
 nircmd.exe wait 500
 
 ::Confirms save
