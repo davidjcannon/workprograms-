@@ -21,6 +21,10 @@ set /a dataCorrect=0
 FOR %%f IN (tillBalance.txt) DO SET filedatetime=%%~tf
 IF %filedatetime:~0, 10% == %date:~4% set /a dataCorrect=1
 
+for /f "usebackq" %%b in (`type tillBalance.txt ^| find "" /v /c`) do (
+    set /a totalLines=%%b
+)
+
 :Warning
 cls
 echo EOD PU V 2.0
@@ -52,6 +56,12 @@ cls
 if %dataCorrect%==0 (
 set /a warning = 3
 goto Warning
+)
+if %totalLines% > %totalTills% (
+echo data/tillBalance has more lines then tills, please double check file and make sure there are no blank spaces.
+timeout 1 /nobreak >nul
+echo Press anything to ignore...
+pause >nul
 )
 
 :Start
