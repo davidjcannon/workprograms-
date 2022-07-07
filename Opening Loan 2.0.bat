@@ -15,6 +15,7 @@ set /a num=0
 set /a save=1
 set /a safety=0
 set /a warning=0
+set /a totalLines=0
 cd data
 
 set /a dataCorrect=0
@@ -57,12 +58,6 @@ if %dataCorrect%==0 (
 set /a warning = 3
 goto Warning
 )
-if %totalLines% > %totalTills% (
-echo data/tillBalance has more lines then tills, please double check file and make sure there are no blank spaces.
-timeout 1 /nobreak >nul
-echo Press anything to ignore...
-pause >nul
-)
 
 :Start
 mode con: cols=60 lines=15
@@ -73,11 +68,28 @@ echo You can also simply press enter to default to %totalTills%
 set /p num=
 set /a num=%num%
 :: ^^ This basically makes it so that if you enter ANY letters it'll run it as if you typed nothing
-if %num% GTR %totalTills% set /a num=%totalTills%
-:: This prevents errors ^^
+
+if %num% GTR %totalTills% (
+cls
+echo WARNING: Tills entered is greater than total tills
+timeout 1 /nobreak >nul
+echo Press anything to ignore...
+pause>nul
+set /a totalTills=%num%
+)
+
 if %num%==0 set /a num=%totalTills%
 set /a count=%totalTills%-%num%
 if %num% LSS 0 set /a count=%totalTills%-(%totalTills%+%num%)
+
+:: Checks to make sure lines in tillBalance isn't greater then the total amount of tills
+if %totalLines% GTR %totalTills% (
+echo data/tillBalance has more lines then tills, please double check file and make sure there are no blank spaces.
+timeout 1 /nobreak >nul
+echo Press anything to ignore...
+pause >nul
+)
+
 :: ^^ Allows you to say how many have currently been done using negatives
 if %start%==1 (
 cls
