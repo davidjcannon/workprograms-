@@ -8,7 +8,7 @@ set today=%DATE:~4,2%/%DATE:~7,2%/%DATE:~10,4%
 For /F %%A In ('PowerShell -NoP "(Get-Date).AddDays(-1).ToString('MM/dd/yyyy')"'
 )Do Set "yesterday=%%A"
 mode con: cols=60 lines=15
-set /a totalTills=18
+set /a totalTills=0
 set /a count=0
 set /a start=0
 set /a num=0
@@ -22,8 +22,16 @@ set /a dataCorrect=0
 FOR %%f IN (tillBalance.txt) DO SET filedatetime=%%~tf
 IF %filedatetime:~0, 10% == %date:~4% set /a dataCorrect=1
 
+:: Detects total number of lines in tillBalance
 for /f "usebackq" %%b in (`type tillBalance.txt ^| find "" /v /c`) do (
     set /a totalLines=%%b
+)
+
+:: Detects total number of tills in scannedTills
+for /F %%N in ('find /C "Till" ^< "scannedTills.txt"') do set totalTills=%%N
+if %totalTills%==0 (
+set /a warning = 4
+goto Warning
 )
 
 :Warning
@@ -275,6 +283,7 @@ if %debug%==1 echo %expectedTill% %currentTill%
 echo Wrong till has been selected...
 )
 if %warning%==3 echo data/tillBalance hasn't been updated in over a day, please correct this.
+if %warning%==4 echo data/scannedTills contains no tills, please run scanTills.bat to scan all Tills
 echo Press anything to close script...
 pause >nul
 exit
