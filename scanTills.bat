@@ -3,8 +3,14 @@ title Scan Tills
 color a
 cd data
 
+:: Checks if in proper directory
+if not exist "..\%~n0%~x0" goto Error
+
 :Warning
 cls
+echo Scan Tills V 1.2
+echo WARNING: Only run this if you need to update data/scannedTills.txt
+echo How to use:
 echo Go to Activities / Tender Pickup
 echo You MUST be using chrome for the script to work
 echo Avoid touching the keyboard or mouse while the program is running unless attempting to close it
@@ -50,4 +56,13 @@ goto Loop
 echo Till not found
 echo Press anything to end program...
 pause >nul
+exit
+
+:Error
+color c
+cls
+echo Please make a copy of "Cash Office Scripts" to your desktop
+echo You can do this manually or by running updater.bat
+echo Do not run this script in the shared folder
+pause
 exit

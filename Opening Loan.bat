@@ -1,9 +1,14 @@
 @echo off
 title Opening Loan
 color a
+cd data
+
 :Restart
 set /a debug=0
 set today=%DATE:~4,2%/%DATE:~7,2%/%DATE:~10,4%
+::
+:: Yesterday's date not neeeded
+::
 mode con: cols=60 lines=15
 set /a totalTills=0
 set /a count=0
@@ -13,7 +18,33 @@ set /a save=1
 set /a safety=0
 set /a warning=0
 set /a totalLines=0
-cd data
+set /p version=<version.txt
+
+:: Checks if in proper directory
+if not exist "..\%~n0%~x0" (
+set /a warning = 5
+goto Error
+)
+
+:: Checks logTo.txt to see where you would like to log data
+if exist logTo.txt set /p logTo=<logTo.txt
+
+::Checks latest version
+PUSHD %logTo%\Cash Office Scripts\data\
+if not exist version.txt goto SkipUpdate
+set /p latestVer=<version.txt
+if NOT %latestVer%==%version% (
+POPD
+cls
+echo A new update is avaliable
+echo Press anything to update...
+pause >nul
+call "%~dp0/Updater.bat"
+exit
+)
+
+:SkipUpdate
+POPD
 
 :: Updates old tillBalance.txt to new TillBalance.txt location and format
 if NOT exist "%~dp0\TillBalance.txt" if exist "tillBalance.txt" (
@@ -21,10 +52,14 @@ rename "tillBalance.txt" "TillBalance.txt"
 move TillBalance.txt %~dp0
 )
 
+cd..
+if exist updater.bat rename updater.bat Updater.bat
+cd data
+
 :: If it still doesn't exist then come up with error
 if NOT exist "%~dp0\TillBalance.txt" (
 echo. > "%~dp0\TillBalance.txt"
-set /a warning = 5
+set /a warning = 50
 goto Error
 )
 
@@ -38,13 +73,28 @@ for /F useback^ delims^=^ eol^= %%L in (..\TillBalance.txt) do set /A "totalLine
 :: Detects total number of tills in scannedTills
 for /F %%N in ('find /C "Till" ^< "scannedTills.txt"') do set totalTills=%%N
 if %totalTills%==0 (
-set /a warning = 4
+set /a warning = 3
 goto Error
 )
 
+set /a flag=0
+:FastCheck
+set "amount="
+if %count% GTR 0 for /F "skip=%count% delims=" %%i in (..\TillBalance.txt) do if not defined amount set "amount=%%i"
+if %count%==0 set /p amount=< "%~dp0\TillBalance.txt"
+for %%a in ("%amount:.=" "%") do ( if %%~a GEQ 1000 set /a flag=%count%+1 )
+if NOT %flag%==0 (
+set /a warning = 6
+goto Error
+)
+set /a count+=1
+if %count% LSS %totalLines% goto FastCheck
+set /a count=0
+
 :Warning
+color a
 cls
-echo Opening Loan V 2.1
+echo Opening Loan V %version%
 echo Made by David Cannon
 echo Press enter to continue...
 set /p input=
@@ -55,6 +105,9 @@ goto Money
 )
 color c
 mode con: cols=120 lines=20
+PUSHD %logTo%
+echo %username% %date% %time:~0,5% %version% Opened Opening Loan Script (Warning Screen)>> Logs/%date:~10,4%%date:~4,2%%date:~7,2%.txt
+POPD
 cls
 echo You MUST be using chrome for the script to work
 echo Avoid touching the keyboard or mouse while the program is running unless attempting to close it
@@ -71,15 +124,24 @@ FOR %%f in (..\TillBalance.txt) DO SET filedatetime=%%~tf
 IF %filedatetime:~0, 10% == %date:~4% set /a dataCorrect=1
 cls
 if %dataCorrect%==0 (
-set /a warning = 3
+set /a warning = 60
 goto Error
 )
 
 :: Checks to make sure lines in tillBalance is equal to the total amount of tills
 cls
 if NOT %totalLines%==%totalTills% (
-if %totalLines% GTR %totalTills% echo TillBalance.txt has more lines then tills, please double check TillBalance.txt and make sure you didn't input too many tills 
-if %totalLines% LSS %totalTills% echo TillBalance.txt has less lines then tills, please double check TillBalance.txt and make sure you entered every Till
+
+if %totalLines% GTR %totalTills% (
+set /a warning = 70
+goto Error
+)
+
+if %totalLines% LSS %totalTills% (
+set /a warning = 71
+goto Error
+)
+
 echo If everything is correct already consider updating data/scannedTills.txt by running scanTills.bat
 timeout 1 /nobreak >nul
 echo Press anything to ignore...
@@ -107,7 +169,7 @@ set /a totalTills=%num%
 
 if %num%==0 set /a num=%totalTills%
 set /a count=%totalTills%-%num%
-if %num% LSS 0 set /a count=%totalTills%-(%totalTills%+%num%)
+if %num% LSS 0 set /a count=%totalTills%+%num%
 
 :: ^^ Allows you to say how many have currently been done using negatives
 if %start%==1 (
@@ -117,6 +179,10 @@ goto Money
 echo Press anything to start the script...
 set /a start=1
 pause >nul
+
+PUSHD %logTo%
+echo %username% %date% %time:~0,5% %version% Script started>> Logs/%date:~10,4%%date:~4,2%%date:~7,2%.txt
+POPD
 
 :: Hides program
 nircmd.exe win min process cmd.exe
@@ -237,7 +303,7 @@ timeout 0 /nobreak
 set /a attempts=0
 :Retry2
 if %attempts% GTR 4 (
-set /a warning=6
+set /a warning = 4
 goto Error
 )
 
@@ -271,6 +337,9 @@ goto Retry2
 nircmd.exe win activate process cmd.exe
 nircmd.exe win focus process cmd.exe
 
+PUSHD %logTo%
+echo %username% %date% %time:~0,5% %version% Added %currentTill% with $%amount%>> Logs/%date:~10,4%%date:~4,2%%date:~7,2%.txt
+POPD
 cls
 echo Confirm all information looks correct
 timeout 2
@@ -304,7 +373,12 @@ timeout 1 /nobreak
 if %safety%==1 timeout 4 /nobreak
 
 set /a count=%count%+1
-if %count% GEQ %totalTills% exit
+if %count% GEQ %totalLines% (
+PUSHD %logTo%
+echo %username% %date% %time:~0,5% %version% Script successfully completed>> Logs/%date:~10,4%%date:~4,2%%date:~7,2%.txt
+POPD
+exit
+)
 
 ::Loops program
 goto Loop
@@ -318,7 +392,10 @@ mode con: cols=120 lines=20
 nircmd.exe win activate process cmd.exe
 nircmd.exe win focus process cmd.exe
 
+PUSHD %logTo%
+echo %username% %date% %time:~0,5% %version% Error %warning%>> Logs/%date:~10,4%%date:~4,2%%date:~7,2%.txt
 cls
+POPD
 
 :: Non-restartable warnings
 if %warning%==1 echo Script cannot run with SCO
@@ -326,26 +403,48 @@ if %warning%==2 (
 if %debug%==1 echo %expectedTill% %currentTill%
 echo Wrong till has been selected...
 )
-if %warning%==4 echo data/scannedTills contains no tills, please run scanTills.bat to scan all Tills
+if %warning%==3 echo data/scannedTills contains no tills, please run scanTills.bat to scan all Tills
 
-:: Restartable warnings
-if %warning%==3 set /a restart=1
-if %warning%==5 set /a restart=1
-
-:: Allows the program  to restart if error is easily fixible
-if %restart%==1 (
-if %warning%==3 echo TillBalance.txt hasn't been updated in over a day, please fill-in new values, then close and save the window to continue
-if %warning%==5 echo TillBalance.txt didn't exist, empty file created, please input till balances, then close and save the window to continue
-echo After that the script will restart
-call "%~dp0\TillBalance.txt"
-goto Restart
-)
-
-if %warning%==6 (
+if %warning%==4 (
 echo The script failed to validate money amount confirm everything is okay to continue...
 pause
 set /a attempts=0
 goto Retry2
+)
+
+if %warning%==5 (
+echo Please make a copy of "Cash Office Scripts" to your desktop
+echo You can do this manually or by running updater.bat
+echo Do not run this script in the shared folder
+)
+
+if %warning%==6 (
+echo Line %flag% has more then $1000 declared on it, please confirm that this is correct
+echo After that close and save the window to continue and the script will resume
+call "%~dp0\TillBalance.txt"
+goto Warning
+)
+
+:: Restartable warnings
+if %warning% GEQ 10 set /a restart=1
+
+:: Allows the program  to restart if error is easily fixible
+if %restart%==1 (
+if %warning%==50 echo TillBalance.txt didn't exist, empty file created, please input till balances
+if %warning%==60 echo TillBalance.txt hasn't been updated in over a day, please fill-in new values
+if %warning%==70 (
+echo TillBalance.txt has more lines then tills
+echo Please double check TillBalance.txt and make sure you didn't input too many tills
+)
+if %warning%==71 (
+echo TillBalance.txt has less lines then tills
+echo Please fill-in TillBalance.txt and make sure you didn't miss any tills
+echo Tills cannot be left blank
+)
+
+echo After that close and save the window to continue and the script will restart
+call "%~dp0\TillBalance.txt"
+goto Restart
 )
 
 echo Press anything to close script...
