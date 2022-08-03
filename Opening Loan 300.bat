@@ -94,8 +94,7 @@ set /a totalTills=%num%
 
 if %num%==0 set /a num=%totalTills%
 set /a count=%totalTills%-%num%
-if %totalLines% LSS %totalTills% set /a count=0
-if %num% LSS 0 set /a count=%totalTills%-(%totalTills%+%num%)
+if %num% LSS 0 set /a count=%totalTills%+%num%
 
 :: ^^ Allows you to say how many have currently been done using negatives
 echo Press anything to start the script...
@@ -175,11 +174,15 @@ nircmd.exe clipboard set "Opening Loan (%today%)"
 
 :: Checks if a Till was found, if no till is found the program likely finished
 find /c "Till" data.txt && ( goto Skip )
+
+:: Shows CMD
+nircmd.exe win activate process cmd.exe
+nircmd.exe win focus process cmd.exe
+
 cls
 echo Till not found
 echo Click any button to retry, otherwise close the program...
 pause >nul
-pause
 set /a count=%count%-1
 goto Retry
 
@@ -225,9 +228,9 @@ nircmd.exe sendkeypress ctrl+c
 nircmd.exe wait 5
 nircmd.exe clipboard writefile "data.txt"
 set /p value=<data.txt
-if NOT %value%==%amount% (
+if NOT %value%=="300" (
 timeout 1 /nobreak >nul
-set /a attemps=%attemps%+1
+set /a attempts=%attempts%+1
 goto Retry2
 )
 
@@ -236,7 +239,7 @@ nircmd.exe win activate process cmd.exe
 nircmd.exe win focus process cmd.exe
 
 PUSHD %logTo%
-echo %username% %date% %time:~0,5% %version% Added %currentTill%>> Logs/%date:~10,4%%date:~4,2%%date:~7,2%.txt
+echo %username% %date% %time:~0,5% %version% Added $300 to %currentTill%>> Logs/%date:~10,4%%date:~4,2%%date:~7,2%.txt
 POPD
 cls
 echo Confirm all information looks correct

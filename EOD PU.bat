@@ -329,7 +329,7 @@ nircmd.exe clipboard writefile "data.txt"
 set /p value=<data.txt
 if NOT %value%==%amount% (
 timeout 1 /nobreak >nul
-set /a attemps=%attemps%+1
+set /a attempts=%attempts%+1
 goto Retry2
 )
 
